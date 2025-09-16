@@ -1,0 +1,563 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Save, Download, Upload, Search, Trash2, Edit } from 'lucide-react';
+
+const FootballCardCreator = () => {
+  // Estados principales
+  const [cards, setCards] = useState({
+    players: [],
+    actions: [],
+    powers: [],
+    environment: []
+  });
+  
+  const [activeTab, setActiveTab] = useState('players');
+  const [editingCard, setEditingCard] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Cargar datos del localStorage al iniciar
+  useEffect(() => {
+    const savedCards = localStorage.getItem('football-tcg-cards');
+    if (savedCards) {
+      setCards(JSON.parse(savedCards));
+    }
+  }, []);
+
+  // Guardar en localStorage cada vez que cambien las cartas
+  useEffect(() => {
+    localStorage.setItem('football-tcg-cards', JSON.stringify(cards));
+  }, [cards]);
+
+  // Formularios por tipo de carta
+  const [playerForm, setPlayerForm] = useState({
+    name: '',
+    position: '',
+    level: 1,
+    attributes: {
+      pase: 50,
+      tiro: 50,
+      regate: 50,
+      control: 50,
+      velocidad: 50,
+      fuerza: 50,
+      resistencia: 50,
+      salto: 50,
+      vision: 50,
+      concentracion: 50,
+      liderazgo: 50,
+      creatividad: 50
+    },
+    rarity: 'common',
+    description: ''
+  });
+
+  const [actionForm, setActionForm] = useState({
+    name: '',
+    type: 'positive',
+    energy: 1,
+    description: '',
+    effect: ''
+  });
+
+  const [powerForm, setPowerForm] = useState({
+    name: '',
+    position: 'attack',
+    energy: 1,
+    description: '',
+    effect: ''
+  });
+
+  const [environmentForm, setEnvironmentForm] = useState({
+    name: '',
+    category: 'stadium',
+    level: 1,
+    description: '',
+    effect: '',
+    isLocal: true
+  });
+
+  // Funciones para crear cartas
+  const createPlayerCard = () => {
+    const newCard = {
+      id: Date.now(),
+      ...playerForm,
+      type: 'player'
+    };
+    setCards(prev => ({
+      ...prev,
+      players: [...prev.players, newCard]
+    }));
+    resetPlayerForm();
+  };
+
+  const createActionCard = () => {
+    const newCard = {
+      id: Date.now(),
+      ...actionForm,
+      type: 'action'
+    };
+    setCards(prev => ({
+      ...prev,
+      actions: [...prev.actions, newCard]
+    }));
+    resetActionForm();
+  };
+
+  const createPowerCard = () => {
+    const newCard = {
+      id: Date.now(),
+      ...powerForm,
+      type: 'power'
+    };
+    setCards(prev => ({
+      ...prev,
+      powers: [...prev.powers, newCard]
+    }));
+    resetPowerForm();
+  };
+
+  const createEnvironmentCard = () => {
+    const newCard = {
+      id: Date.now(),
+      ...environmentForm,
+      type: 'environment'
+    };
+    setCards(prev => ({
+      ...prev,
+      environment: [...prev.environment, newCard]
+    }));
+    resetEnvironmentForm();
+  };
+
+  // Funciones para reset formularios
+  const resetPlayerForm = () => {
+    setPlayerForm({
+      name: '',
+      position: '',
+      level: 1,
+      attributes: {
+        pase: 50, tiro: 50, regate: 50, control: 50,
+        velocidad: 50, fuerza: 50, resistencia: 50, salto: 50,
+        vision: 50, concentracion: 50, liderazgo: 50, creatividad: 50
+      },
+      rarity: 'common',
+      description: ''
+    });
+  };
+
+  const resetActionForm = () => {
+    setActionForm({ name: '', type: 'positive', energy: 1, description: '', effect: '' });
+  };
+
+  const resetPowerForm = () => {
+    setPowerForm({ name: '', position: 'attack', energy: 1, description: '', effect: '' });
+  };
+
+  const resetEnvironmentForm = () => {
+    setEnvironmentForm({ name: '', category: 'stadium', level: 1, description: '', effect: '', isLocal: true });
+  };
+
+  // Función para borrar carta
+  const deleteCard = (cardType, cardId) => {
+    setCards(prev => ({
+      ...prev,
+      [cardType]: prev[cardType].filter(card => card.id !== cardId)
+    }));
+  };
+
+  // Función para exportar datos
+  const exportData = () => {
+    const dataStr = JSON.stringify(cards, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'football-tcg-cards.json';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Filtrar cartas por búsqueda
+  const filterCards = (cardList) => {
+    if (!searchTerm) return cardList;
+    return cardList.filter(card => 
+      card.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  // Componente para mostrar carta de jugador
+  const PlayerCardPreview = ({ card }) => (
+    <Card className="w-80 bg-gradient-to-br from-blue-900 to-blue-700 text-white">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{card.name}</CardTitle>
+            <Badge variant="secondary">{card.position}</Badge>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold">Lv.{card.level}</div>
+            <Badge variant={card.rarity === 'legendary' ? 'destructive' : 'default'}>
+              {card.rarity}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>Pase: {card.attributes.pase}</div>
+          <div>Tiro: {card.attributes.tiro}</div>
+          <div>Regate: {card.attributes.regate}</div>
+          <div>Control: {card.attributes.control}</div>
+          <div>Velocidad: {card.attributes.velocidad}</div>
+          <div>Fuerza: {card.attributes.fuerza}</div>
+        </div>
+        <p className="text-xs opacity-80">{card.description}</p>
+      </CardContent>
+    </Card>
+  );
+
+  // Componente para mostrar carta de acción
+  const ActionCardPreview = ({ card }) => (
+    <Card className={`w-80 ${
+      card.type === 'positive' ? 'bg-gradient-to-br from-green-600 to-green-800' :
+      card.type === 'negative' ? 'bg-gradient-to-br from-red-600 to-red-800' :
+      'bg-gradient-to-br from-gray-600 to-gray-800'
+    } text-white`}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">{card.name}</CardTitle>
+          <div className="text-2xl font-bold">⚡{card.energy}</div>
+        </div>
+        <Badge variant="outline" className="w-fit">
+          {card.type}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm">{card.description}</p>
+        <div className="mt-2 p-2 bg-black/20 rounded">
+          <p className="text-xs font-mono">{card.effect}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-bold text-gray-800">⚽ Football TCG Creator</h1>
+          <div className="flex gap-2">
+            <Button onClick={exportData} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <Button variant="outline">
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+          </div>
+        </div>
+
+        {/* Buscador */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+            <Input 
+              placeholder="Buscar cartas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Tabs principales */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="players">👤 Jugadores ({cards.players.length})</TabsTrigger>
+            <TabsTrigger value="actions">⚡ Acciones ({cards.actions.length})</TabsTrigger>
+            <TabsTrigger value="powers">🔥 Poderes ({cards.powers.length})</TabsTrigger>
+            <TabsTrigger value="environment">🏟️ Ambiente ({cards.environment.length})</TabsTrigger>
+          </TabsList>
+
+          {/* Tab de Jugadores */}
+          <TabsContent value="players" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Formulario de creación */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Crear Nuevo Jugador</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input 
+                      placeholder="Nombre del jugador"
+                      value={playerForm.name}
+                      onChange={(e) => setPlayerForm(prev => ({...prev, name: e.target.value}))}
+                    />
+                    <Select 
+                      value={playerForm.position}
+                      onValueChange={(value) => setPlayerForm(prev => ({...prev, position: value}))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Posición" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="goalkeeper">Arquero</SelectItem>
+                        <SelectItem value="defender">Defensor</SelectItem>
+                        <SelectItem value="midfielder">Mediocampista</SelectItem>
+                        <SelectItem value="forward">Delantero</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input 
+                      type="number"
+                      placeholder="Nivel (1-10)"
+                      value={playerForm.level}
+                      onChange={(e) => setPlayerForm(prev => ({...prev, level: parseInt(e.target.value) || 1}))}
+                      min="1" max="10"
+                    />
+                    <Select 
+                      value={playerForm.rarity}
+                      onValueChange={(value) => setPlayerForm(prev => ({...prev, rarity: value}))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Rareza" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="common">Común</SelectItem>
+                        <SelectItem value="rare">Raro</SelectItem>
+                        <SelectItem value="epic">Épico</SelectItem>
+                        <SelectItem value="legendary">Legendario</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Atributos */}
+                  <div>
+                    <h4 className="font-medium mb-2">Atributos</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(playerForm.attributes).map(([attr, value]) => (
+                        <div key={attr} className="flex items-center gap-2">
+                          <label className="text-sm capitalize w-20">{attr}:</label>
+                          <Input 
+                            type="number"
+                            value={value}
+                            onChange={(e) => setPlayerForm(prev => ({
+                              ...prev,
+                              attributes: {
+                                ...prev.attributes,
+                                [attr]: parseInt(e.target.value) || 0
+                              }
+                            }))}
+                            min="0" max="100"
+                            className="w-20"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Textarea 
+                    placeholder="Descripción del jugador..."
+                    value={playerForm.description}
+                    onChange={(e) => setPlayerForm(prev => ({...prev, description: e.target.value}))}
+                  />
+
+                  <Button onClick={createPlayerCard} className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Crear Jugador
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Vista previa */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Vista Previa</h3>
+                <PlayerCardPreview card={playerForm} />
+              </div>
+            </div>
+
+            {/* Lista de jugadores creados */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Jugadores Creados</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filterCards(cards.players).map(card => (
+                  <div key={card.id} className="relative">
+                    <PlayerCardPreview card={card} />
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteCard('players', card.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tab de Acciones */}
+          <TabsContent value="actions" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Formulario de creación de acciones */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Crear Nueva Acción</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input 
+                    placeholder="Nombre de la acción"
+                    value={actionForm.name}
+                    onChange={(e) => setActionForm(prev => ({...prev, name: e.target.value}))}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Select 
+                      value={actionForm.type}
+                      onValueChange={(value) => setActionForm(prev => ({...prev, type: value}))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="positive">Positiva</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                        <SelectItem value="negative">Negativa</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input 
+                      type="number"
+                      placeholder="Energía requerida"
+                      value={actionForm.energy}
+                      onChange={(e) => setActionForm(prev => ({...prev, energy: parseInt(e.target.value) || 1}))}
+                      min="1" max="10"
+                    />
+                  </div>
+
+                  <Textarea 
+                    placeholder="Descripción de la acción..."
+                    value={actionForm.description}
+                    onChange={(e) => setActionForm(prev => ({...prev, description: e.target.value}))}
+                  />
+
+                  <Textarea 
+                    placeholder="Efecto mecánico..."
+                    value={actionForm.effect}
+                    onChange={(e) => setActionForm(prev => ({...prev, effect: e.target.value}))}
+                  />
+
+                  <Button onClick={createActionCard} className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Crear Acción
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Vista previa */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Vista Previa</h3>
+                <ActionCardPreview card={actionForm} />
+              </div>
+            </div>
+
+            {/* Lista de acciones creadas */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Acciones Creadas</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filterCards(cards.actions).map(card => (
+                  <div key={card.id} className="relative">
+                    <ActionCardPreview card={card} />
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteCard('actions', card.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tabs para Poderes y Ambiente - Similar estructura */}
+          <TabsContent value="powers" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>🔥 Sección de Poderes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-gray-600">
+                  Formulario de creación de poderes próximamente...
+                </p>
+                <div className="text-center mt-4">
+                  <Badge variant="outline">En desarrollo</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="environment" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>🏟️ Sección de Cartas Ambientales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-gray-600">
+                  Formulario de creación de cartas ambientales próximamente...
+                </p>
+                <div className="text-center mt-4">
+                  <Badge variant="outline">En desarrollo</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Estadísticas */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>📊 Estadísticas del Proyecto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{cards.players.length}</div>
+                <div className="text-sm text-gray-600">Jugadores</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{cards.actions.length}</div>
+                <div className="text-sm text-gray-600">Acciones</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-600">{cards.powers.length}</div>
+                <div className="text-sm text-gray-600">Poderes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{cards.environment.length}</div>
+                <div className="text-sm text-gray-600">Ambiente</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default FootballCardCreator;
